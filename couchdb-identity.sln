@@ -1,0 +1,42 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.6.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "root", "root", "{B6A3046C-55A7-4122-B400-205DC88A59AD}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		global.json = global.json
+		LICENSE = LICENSE
+		README.md = README.md
+		version.json = version.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{002B16E5-4F16-478A-B481-AB4EED52AA9E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{5B275BB0-13F7-4AEE-8EA6-5CE51EE3E7F0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNetCore.Identity.CouchDB", "src\AspNetCore.Identity.CouchDb\AspNetCore.Identity.CouchDB.csproj", "{F3020826-F027-474C-B2AF-932E8A96814D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F3020826-F027-474C-B2AF-932E8A96814D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3020826-F027-474C-B2AF-932E8A96814D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3020826-F027-474C-B2AF-932E8A96814D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3020826-F027-474C-B2AF-932E8A96814D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F3020826-F027-474C-B2AF-932E8A96814D} = {002B16E5-4F16-478A-B481-AB4EED52AA9E}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A56E1C6D-159C-4F95-80A2-E116D7D11034}
+	EndGlobalSection
+EndGlobal
