@@ -31,7 +31,7 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build -c Release --no-restore
+        run: dotnet build -c Release
 
       - name: Pack
         run: dotnet pack -c Release -o out --no-build --include-symbols
