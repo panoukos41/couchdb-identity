@@ -1,6 +1,13 @@
 # AspNetCore.Identity.CouchDB
 
-[CouchDB](https://couchdb.apache.org/) store provider for the [ASP.NET Core Identity](https://github.com/dotnet/aspnetcore/tree/main/src/Identity) using [CouchDB.NET](https://github.com/matteobortolazzo/couchdb-net).
+[![GitHub Workflow Status](https://github.com/panoukos41/couchdb-identity/actions/workflows/ci-build.yaml/badge.svg)](https://github.com/panoukos41/couchdb-identity/actions)
+[![Nuget](https://img.shields.io/nuget/v/AspNetCore.Identity.CouchDB)](https://www.nuget.org/packages/AspNetCore.Identity.CouchDB/)
+[![Nuget Downloads](https://img.shields.io/nuget/dt/AspNetCore.Identity.CouchDB)](https://www.nuget.org/packages/AspNetCore.Identity.CouchDB/)
+[![GitHub](https://img.shields.io/github/license/panoukos41/couchdb-identity)](https://github.com/panoukos41/couchdb-identity/blob/main/LICENSE.md)
+
+    
+
+[CouchDB](https://couchdb.apache.org/) identity store provider for the [ASP.NET Core Identity](https://github.com/dotnet/aspnetcore/tree/main/src/Identity) using [CouchDB.NET](https://github.com/matteobortolazzo/couchdb-net).
 
 The UserStore implements the following Interfaces:
 - IQueryableUserStore
