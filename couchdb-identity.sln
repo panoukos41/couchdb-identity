@@ -17,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{002B16E5-4F1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{5B275BB0-13F7-4AEE-8EA6-5CE51EE3E7F0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNetCore.Identity.CouchDB", "src\AspNetCore.Identity.CouchDb\AspNetCore.Identity.CouchDB.csproj", "{F3020826-F027-474C-B2AF-932E8A96814D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNetCore.Identity.CouchDB", "src\AspNetCore.Identity.CouchDB\AspNetCore.Identity.CouchDB.csproj", "{F3020826-F027-474C-B2AF-932E8A96814D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
