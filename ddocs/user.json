@@ -1,0 +1,15 @@
+{
+    "_id": "_design/user",
+    "views": {
+        "normalized_email": {
+            "map": "function (doc) {\n  if (doc.discriminator == 'aspnetcore.user') {\n    emit(doc.email.normalized, 1);\n  }\n}"
+        },
+        "normalized_username": {
+            "map": "function (doc) {\n  if(doc.discriminator == 'aspnetcore.user') {\n    emit(doc.normalized_username, 1);\n  }\n}"
+        },
+        "roles": {
+            "map": "function (doc) {\n  if (doc.discriminator == 'aspnetcore.user') {\n    doc.roles.forEach(role => {\n      emit(role, doc._id);\n    })\n  }\n}"
+        }
+    },
+    "language": "javascript"
+}
