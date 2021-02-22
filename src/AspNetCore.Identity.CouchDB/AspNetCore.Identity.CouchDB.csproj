@@ -9,7 +9,7 @@
     <PackageId>AspNetCore.Identity.CouchDB</PackageId>
     <Authors>panoukos41</Authors>
     <PackageDescription>
-      This package for ...!
+      CouchDB identity store provider for the ASP.NET Core Identity using CouchDB.NET.
     </PackageDescription>
     <PackageTags>
       aspnetcore;identity;couchdb;dotnet;csharp
