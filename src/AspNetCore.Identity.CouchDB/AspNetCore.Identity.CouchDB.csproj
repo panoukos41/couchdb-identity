@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>AspNetCore.Identity.CouchDB</PackageId>
+    <Authors>panoukos41</Authors>
+    <PackageDescription>
+      This package for ...!
+    </PackageDescription>
+    <PackageTags>
+      aspnetcore;identity;couchdb;dotnet;csharp
+    </PackageTags>
+    
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/panoukos41/couchdb-identity</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CouchDB.NET" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="5.0.3" />
+  </ItemGroup>
+</Project>
