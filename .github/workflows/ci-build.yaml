@@ -6,9 +6,9 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - ".github/"
+      - ".github/**"
       - ".gitignore"
-      - "ddocs/"
+      - "ddocs/**"
       - "global.json"
       - "**/*.sln"
       - "**/*.props"
