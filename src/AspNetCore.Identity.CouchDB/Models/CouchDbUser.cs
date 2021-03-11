@@ -1,4 +1,5 @@
-﻿using AspNetCore.Identity.CouchDB.Models.Internal;
+﻿#nullable disable
+using CouchDB.Driver.Types;
 using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
 using System;
@@ -32,7 +33,7 @@ namespace AspNetCore.Identity.CouchDB.Models
     /// Equality only compares the <see cref="NormalizedUserName"/> property.<br/>
     /// GetHashCode returns a hash for the <see cref="NormalizedUserName"/> property.
     /// </remarks>
-    public class CouchDbUser<TRole> : IdentityCouchDocument, IEquatable<CouchDbUser<TRole>?>
+    public class CouchDbUser<TRole> : CouchDocument, IEquatable<CouchDbUser<TRole>?>
         where TRole : CouchDbRole
     {
         /// <summary>
@@ -51,9 +52,6 @@ namespace AspNetCore.Identity.CouchDB.Models
             UserName = userName;
             NormalizedUserName = userName.ToUpperInvariant();
         }
-
-        /// <inheritdoc/>
-        public override string Discriminator { get; set; } = "aspnetcore.user";
 
         /// <inheritdoc/>
         [PersonalData]
@@ -158,3 +156,4 @@ namespace AspNetCore.Identity.CouchDB.Models
         #endregion
     }
 }
+#nullable enable
