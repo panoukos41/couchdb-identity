@@ -1,8 +1,8 @@
-﻿#pragma warning disable CA1034 // Nested types should not be visible
+﻿using AspNetCore.Identity.CouchDB.Models;
 
-using AspNetCore.Identity.CouchDB.Models;
+#pragma warning disable CA1034 // Nested types should not be visible
 
-namespace AspNetCore.Identity.CouchDB
+namespace AspNetCore.Identity.CouchDB.Internal
 {
     /// <summary>
     /// Views regarding AspNetCore.Identity.CouchDb integration.
@@ -11,7 +11,7 @@ namespace AspNetCore.Identity.CouchDB
     /// These can be overriden but make sure your database has the new views
     /// and that they perform the correct actions.
     /// </remarks>
-    public static class CouchDbIdentityViews
+    public static class Views
     {
         /// <summary>
         /// Views regarding a <see cref="CouchDbUser"/> document.
@@ -22,19 +22,22 @@ namespace AspNetCore.Identity.CouchDB
             /// A view for the 'NormalizedUsername' property.
             /// </summary>
             /// <value>Default is user/normalized_username.</value>
-            public static (string design, string view) NormalizedUserName { get; set; } = ("user", "normalized_username");
+            public static View<string, string, CouchDbUser> NormalizedUserName { get; set; } =
+                View<string, string, CouchDbUser>.Create("user", "normalized_username");
 
             /// <summary>
             /// A view for the 'NormalizedEmail' property.
             /// </summary>
             /// <value>Default is user/normalized_email.</value>
-            public static (string design, string view) NormalizedEmail { get; set; } = ("user", "normalized_email");
+            public static View<string, string, CouchDbUser> NormalizedEmail { get; set; } =
+                View<string, string, CouchDbUser>.Create("user", "normalized_email");
 
             /// <summary>
             /// A view for the 'Roles' property.
             /// </summary>
             /// <value>Default is user/roles.</value>
-            public static (string design, string view) Roles { get; set; } = ("user", "roles");
+            public static View<string, string, CouchDbUser> Roles { get; set; } =
+                View<string, string, CouchDbUser>.Create("user", "roles");
         }
 
         /// <summary>
@@ -46,7 +49,8 @@ namespace AspNetCore.Identity.CouchDB
             /// A view for the 'NormalizedName' property.
             /// </summary>
             /// <value>Default is user/normalized_name.</value>
-            public static (string design, string view) NormalizedName { get; set; } = ("role", "normalized_name");
+            public static View<string, int, CouchDbRole> NormalizedName { get; set; } =
+                View<string, int, CouchDbRole>.Create("role", "normalized_name");
         }
     }
 }
