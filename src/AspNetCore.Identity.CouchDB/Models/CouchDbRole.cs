@@ -1,4 +1,4 @@
-﻿using AspNetCore.Identity.CouchDB.Models.Internal;
+﻿using CouchDB.Driver.Types;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ namespace AspNetCore.Identity.CouchDB.Models
     /// Equality only compares the <see cref="NormalizedName"/> property.<br/>
     /// GetHashCode returns a hash for the <see cref="NormalizedName"/> property.
     /// </remarks>
-    public class CouchDbRole : IdentityCouchDocument, IEquatable<CouchDbRole?>
+    public class CouchDbRole : CouchDocument, IEquatable<CouchDbRole?>
     {
         /// <summary>
         /// Initialize a new <see cref="CouchDbRole"/>.
@@ -31,9 +31,6 @@ namespace AspNetCore.Identity.CouchDB.Models
             Name = roleName;
             NormalizedName = roleName.ToUpperInvariant();
         }
-
-        /// <inheritdoc/>
-        public override string Discriminator { get; set; } = "aspnetcore.role";
 
         ///<summary>
         /// Gets or sets the name for this role.

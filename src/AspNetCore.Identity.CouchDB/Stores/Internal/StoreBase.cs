@@ -1,5 +1,5 @@
-﻿using AspNetCore.Identity.CouchDB.Models.Internal;
-using CouchDB.Driver;
+﻿using CouchDB.Driver;
+using CouchDB.Driver.Types;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
@@ -12,7 +12,7 @@ namespace AspNetCore.Identity.CouchDB.Stores.Internal
     /// </summary>
     /// <typeparam name="TStore">The type of the main store.</typeparam>
     /// <remarks>This is meant for internal stores.</remarks>
-    public abstract class BaseStore<TStore> where TStore : IdentityCouchDocument
+    public abstract class StoreBase<TStore> where TStore : CouchDocument
     {
         /// <summary>
         /// The client used to get databases etc.
@@ -30,7 +30,7 @@ namespace AspNetCore.Identity.CouchDB.Stores.Internal
         /// </summary>
         protected abstract string Discriminator { get; }
 
-        protected BaseStore(IServiceProvider provider, IOptionsMonitor<CouchDbIdentityOptions> options)
+        protected StoreBase(IServiceProvider provider, IOptionsMonitor<CouchDbIdentityOptions> options)
         {
             Options = options;
             Client = options.CurrentValue.CouchClient
@@ -41,8 +41,10 @@ namespace AspNetCore.Identity.CouchDB.Stores.Internal
         /// Get a 'database' class that will serialize/deserialize to <typeparamref name="TStore"/>
         /// </summary>
         /// <returns>A 'database' class that serializes/deserializes classes to <typeparamref name="TStore"/>.</returns>
-        protected ICouchDatabase<TStore> GetDatabase() =>
-            GetDatabase<TStore>();
+        protected ICouchDatabase<TStore> GetDatabase()
+        {
+            return GetDatabase<TStore>(Discriminator);
+        }
 
         /// <summary>
         /// Get a 'database' class that will serialize/deserialize
@@ -50,10 +52,10 @@ namespace AspNetCore.Identity.CouchDB.Stores.Internal
         /// </summary>
         /// <typeparam name="T">The type to serialize/deserialize to/from.</typeparam>
         /// <returns>A 'database' class that serializes/deserializes classes to <typeparamref name="T"/>.</returns>
-        protected ICouchDatabase<T> GetDatabase<T>()
-            where T : IdentityCouchDocument
+        protected ICouchDatabase<T> GetDatabase<T>(string? discriminator = null)
+            where T : CouchDocument
         {
-            return Client.GetDatabase<T>(Options.CurrentValue.DatabaseName);
+            return Client.GetDatabase<T>(Options.CurrentValue.DatabaseName, discriminator);
         }
 
         /// <summary>
@@ -61,8 +63,10 @@ namespace AspNetCore.Identity.CouchDB.Stores.Internal
         /// the supplied <see cref="Discriminator"/> and limits results
         /// to <see cref="CouchDbIdentityOptions.QueryLimit"/>.
         /// </summary>
-        protected IQueryable<TStore> QueryDb() =>
-            QueryDb(GetDatabase());
+        protected IQueryable<TStore> QueryDb()
+        {
+            return QueryDb<TStore>(Discriminator);
+        }
 
         /// <summary>
         /// Get an IQueryable that is configured to search only for
@@ -71,12 +75,10 @@ namespace AspNetCore.Identity.CouchDB.Stores.Internal
         /// to <see cref="CouchDbIdentityOptions.QueryLimit"/>.
         /// </summary>
         /// <typeparam name="T">The type to deserialize results to.</typeparam>
-        protected IQueryable<T> QueryDb<T>(ICouchDatabase<T> database)
-            where T : IdentityCouchDocument
+        protected IQueryable<T> QueryDb<T>(string discriminator)
+            where T : CouchDocument
         {
-            return database
-                .Take(Options.CurrentValue.QueryLimit)
-                .Where(x => x.Discriminator == Discriminator);
+            return GetDatabase<T>(discriminator).Take(Options.CurrentValue.QueryLimit);
         }
     }
 }
