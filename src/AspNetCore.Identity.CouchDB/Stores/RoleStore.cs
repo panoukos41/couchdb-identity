@@ -1,6 +1,8 @@
-﻿using AspNetCore.Identity.CouchDB.Models;
+﻿using AspNetCore.Identity.CouchDB.Internal;
+using AspNetCore.Identity.CouchDB.Models;
 using AspNetCore.Identity.CouchDB.Stores.Internal;
 using CouchDB.Driver;
+using CouchDB.Driver.Views;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using System;
@@ -26,7 +28,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
     /// <typeparam name="TRole">The type of the class representing a role.</typeparam>
     [SuppressMessage("Design", "CA1063:Implement IDisposable Correctly", Justification = "Nothing to dispose of.")]
     public class RoleStore<TRole> :
-        BaseStore<TRole>,
+        StoreBase<TRole>,
         IQueryableRoleStore<TRole>,
         IRoleStore<TRole>
         //IRoleClaimStore<TRole>
@@ -37,10 +39,11 @@ namespace AspNetCore.Identity.CouchDB.Stores
             IOptionsMonitor<CouchDbIdentityOptions> options)
             : base(provider, options)
         {
+            Discriminator = Options.CurrentValue.RoleDiscriminator;
         }
 
         /// <inheritdoc/>
-        protected override string Discriminator => Options.CurrentValue.RoleDiscriminator;
+        protected override string Discriminator { get; }
 
         /// <inheritdoc/>
         public void Dispose() { }
@@ -59,7 +62,6 @@ namespace AspNetCore.Identity.CouchDB.Stores
         {
             Check.NotNull(role, nameof(role));
 
-            role.Discriminator = Discriminator;
             role.Id ??= Guid.NewGuid().ToString();
             await GetDatabase().AddAsync(role, cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -89,9 +91,9 @@ namespace AspNetCore.Identity.CouchDB.Stores
         /// <inheritdoc/>
         public virtual async Task<TRole> FindByIdAsync(string roleId, CancellationToken cancellationToken)
         {
-#pragma warning disable CS8603 // Possible null reference return.
+#nullable disable
             return await GetDatabase().FindAsync(roleId, cancellationToken: cancellationToken).ConfigureAwait(false);
-#pragma warning restore CS8603 // Possible null reference return.
+#nullable enable
         }
 
         /// <inheritdoc/>
@@ -99,15 +101,19 @@ namespace AspNetCore.Identity.CouchDB.Stores
         {
             Check.NotNull(normalizedRoleName, nameof(normalizedRoleName));
 
-            var (design, view) = CouchDbIdentityViews.Role.NormalizedName;
-            var result = await GetDatabase().GetViewAsync<TRole, int, TRole>(design, view, cancellationToken: cancellationToken, options: new()
+            var options = new CouchViewOptions<string>
             {
-                Key = normalizedRoleName,
-                Limit = 1
-            }).ConfigureAwait(false);
-#pragma warning disable CS8603 // Possible null reference return.
-            return result.Rows.FirstOrDefault()?.Doc;
-#pragma warning restore CS8603 // Possible null reference return.
+                IncludeDocs = true,
+                Key = normalizedRoleName
+            };
+
+#nullable disable
+            return (await GetDatabase()
+                .GetViewAsync(Views.Role<TRole>.NormalizedName, options, cancellationToken)
+                .ConfigureAwait(false))
+                .FirstOrDefault()
+                ?.Document;
+#nullable enable
         }
 
         /// <inheritdoc/>

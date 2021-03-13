@@ -1,6 +1,8 @@
-﻿using AspNetCore.Identity.CouchDB.Models;
+﻿using AspNetCore.Identity.CouchDB.Internal;
+using AspNetCore.Identity.CouchDB.Models;
 using AspNetCore.Identity.CouchDB.Stores.Internal;
 using CouchDB.Driver;
+using CouchDB.Driver.Views;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -44,7 +46,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
     /// <remarks>This class has nothing to do with CouchDb's users database.</remarks>
     [SuppressMessage("Design", "CA1063:Implement IDisposable Correctly", Justification = "Nothing to dispose of.")]
     public class UserStore<TUser, TRole> :
-        BaseStore<TUser>,
+        StoreBase<TUser>,
         IQueryableUserStore<TUser>,
         IUserStore<TUser>,
         IUserPasswordStore<TUser>,
@@ -57,7 +59,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         IUserTwoFactorStore<TUser>,
         //IUserAuthenticatorKeyStore<TUser>,
         IUserLockoutStore<TUser>
-        where TUser : CouchDbUser
+        where TUser : CouchDbUser<TRole>
         where TRole : CouchDbRole
     {
         public UserStore(
@@ -66,12 +68,13 @@ namespace AspNetCore.Identity.CouchDB.Stores
             : base(provider, options)
         {
             roleStore = provider.GetRequiredService<IRoleStore<TRole>>();
+            Discriminator = Options.CurrentValue.UserDiscriminator;
         }
 
         private readonly IRoleStore<TRole> roleStore;
 
         /// <inheritdoc/>
-        protected override string Discriminator => Options.CurrentValue.UserDiscriminator;
+        protected override string Discriminator { get; }
 
         /// <inheritdoc/>
         public void Dispose() { }
@@ -90,7 +93,6 @@ namespace AspNetCore.Identity.CouchDB.Stores
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
 
-            user.Discriminator = Discriminator;
             user.Id ??= Guid.NewGuid().ToString();
             await GetDatabase().AddAsync(user, cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -125,9 +127,9 @@ namespace AspNetCore.Identity.CouchDB.Stores
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(userId, nameof(userId));
 
-#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
+#nullable disable
             return GetDatabase().FindAsync(userId, cancellationToken: cancellationToken);
-#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
+#nullable enable
         }
 
         /// <inheritdoc/>
@@ -136,15 +138,19 @@ namespace AspNetCore.Identity.CouchDB.Stores
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(normalizedUserName, nameof(normalizedUserName));
 
-            var (design, view) = CouchDbIdentityViews.User.NormalizedUserName;
-            var result = await GetDatabase().GetViewAsync<TUser, int, TUser>(design, view, cancellationToken: cancellationToken, options: new()
+            var options = new CouchViewOptions<string>
             {
-                Key = normalizedUserName,
-            }).ConfigureAwait(false);
+                IncludeDocs = true,
+                Key = normalizedUserName
+            };
 
-#pragma warning disable CS8603 // Possible null reference return.
-            return result.Rows.FirstOrDefault()?.Doc;
-#pragma warning restore CS8603 // Possible null reference return.
+#nullable disable
+            return (await GetDatabase()
+                .GetViewAsync(Views.User<TUser, TRole>.NormalizedUserName)
+                .ConfigureAwait(false))
+                .FirstOrDefault()
+                ?.Document;
+#nullable enable
         }
 
         /// <inheritdoc/>
@@ -263,15 +269,19 @@ namespace AspNetCore.Identity.CouchDB.Stores
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(normalizedEmail, nameof(normalizedEmail));
 
-            var (design, view) = CouchDbIdentityViews.User.NormalizedEmail;
-            var result = await GetDatabase().GetViewAsync<TUser, string, TUser>(design, view, cancellationToken: cancellationToken, options: new()
+            var options = new CouchViewOptions<string>
             {
+                IncludeDocs = true,
                 Key = normalizedEmail
-            }).ConfigureAwait(false);
+            };
 
-#pragma warning disable CS8603 // Possible null reference return.
-            return result.Rows.FirstOrDefault()?.Doc;
-#pragma warning restore CS8603 // Possible null reference return.
+#nullable disable
+            return (await GetDatabase()
+                .GetViewAsync(Views.User<TUser, TRole>.NormalizedEmail, options, cancellationToken)
+                .ConfigureAwait(false))
+                .FirstOrDefault()
+                ?.Document;
+#nullable enable
         }
 
         /// <inheritdoc/>
@@ -380,8 +390,6 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
         #region IUserRoleStore
 
-        // todo: Fix and check for roles first using role store.
-
         /// <inheritdoc/>
         public virtual async Task AddToRoleAsync(TUser user, string normalizedRoleName, CancellationToken cancellationToken)
         {
@@ -422,13 +430,17 @@ namespace AspNetCore.Identity.CouchDB.Stores
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(normalizedRoleName, nameof(normalizedRoleName));
 
-            var (desing, view) = CouchDbIdentityViews.User.Roles;
-            var result = await GetDatabase().GetViewAsync<TUser, string, TUser>(desing, view, cancellationToken: cancellationToken, options: new()
+            var options = new CouchViewOptions<string>
             {
+                IncludeDocs = true,
                 Key = normalizedRoleName
-            }).ConfigureAwait(false);
+            };
 
-            return result.Rows.Select(x => x.Doc).ToList();
+            return (await GetDatabase()
+                .GetViewAsync(Views.User<TUser, TRole>.NormalizedRoleNames, options, cancellationToken)
+                .ConfigureAwait(false))
+                .Select(x => x.Document)
+                .ToArray();
         }
 
         /// <inheritdoc/>

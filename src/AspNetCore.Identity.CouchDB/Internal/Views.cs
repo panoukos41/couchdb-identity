@@ -16,41 +16,41 @@ namespace AspNetCore.Identity.CouchDB.Internal
         /// <summary>
         /// Views regarding a <see cref="CouchDbUser"/> document.
         /// </summary>
-        public static class User
+        public static class User<TUser, TRole>
+            where TUser : CouchDbUser<TRole>
+            where TRole : CouchDbRole
         {
             /// <summary>
-            /// A view for the 'NormalizedUsername' property.
+            /// Key = NormalizedUserName, Value = Rev
             /// </summary>
-            /// <value>Default is user/normalized_username.</value>
-            public static View<string, string, CouchDbUser> NormalizedUserName { get; set; } =
-                View<string, string, CouchDbUser>.Create("user", "normalized_username");
+            public static View<string, string, TUser> NormalizedUserName { get; set; } =
+                View<string, string, TUser>.Create("user", "normalized_username");
 
             /// <summary>
-            /// A view for the 'NormalizedEmail' property.
+            /// Key = NormalizedEmail, Value = Rev
             /// </summary>
-            /// <value>Default is user/normalized_email.</value>
-            public static View<string, string, CouchDbUser> NormalizedEmail { get; set; } =
-                View<string, string, CouchDbUser>.Create("user", "normalized_email");
+            public static View<string, string, TUser> NormalizedEmail { get; set; } =
+                View<string, string, TUser>.Create("user", "normalized_email");
 
             /// <summary>
-            /// A view for the 'Roles' property.
+            /// Key = Role, Value = Rev
             /// </summary>
-            /// <value>Default is user/roles.</value>
-            public static View<string, string, CouchDbUser> Roles { get; set; } =
-                View<string, string, CouchDbUser>.Create("user", "roles");
+            public static View<string, string, TUser> NormalizedRoleNames { get; set; } =
+                View<string, string, TUser>.Create("user", "normalized_role_names");
         }
 
         /// <summary>
         /// Views regarding a <see cref="CouchDbRole"/> document.
         /// </summary>
-        public static class Role
+        public static class Role<TRole>
+            where TRole : CouchDbRole
         {
             /// <summary>
-            /// A view for the 'NormalizedName' property.
+            /// Key = NormalizedName, Value = Rev
             /// </summary>
             /// <value>Default is user/normalized_name.</value>
-            public static View<string, int, CouchDbRole> NormalizedName { get; set; } =
-                View<string, int, CouchDbRole>.Create("role", "normalized_name");
+            public static View<string, string, TRole> NormalizedName { get; set; } =
+                View<string, string, TRole>.Create("role", "normalized_name");
         }
     }
 }
