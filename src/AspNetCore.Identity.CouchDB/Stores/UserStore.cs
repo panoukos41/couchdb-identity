@@ -146,7 +146,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
 #nullable disable
             return (await GetDatabase()
-                .GetViewAsync(Views.User<TUser, TRole>.NormalizedUserName)
+                .GetViewAsync(Views.User<TUser, TRole>.NormalizedUserName, options, cancellationToken)
                 .ConfigureAwait(false))
                 .FirstOrDefault()
                 ?.Document;
