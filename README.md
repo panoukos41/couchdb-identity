@@ -1,6 +1,6 @@
 # AspNetCore.Identity.CouchDB
 
-[![GitHub Build Status](https://github.com/panoukos41/couchdb-identity/actions/workflows/ci-build.yaml/badge.svg)](https://github.com/panoukos41/couchdb-identity/actions)
+[![GitHub Build Status](https://github.com/panoukos41/couchdb-identity/actions/workflows/build.yaml/badge.svg)](https://github.com/panoukos41/couchdb-identity/actions/workflows/build.yaml)
 [![Nuget](https://img.shields.io/nuget/v/AspNetCore.Identity.CouchDB)](https://www.nuget.org/packages/AspNetCore.Identity.CouchDB/)
 [![Nuget Downloads](https://img.shields.io/nuget/dt/AspNetCore.Identity.CouchDB)](https://www.nuget.org/packages/AspNetCore.Identity.CouchDB/)
 [![GitHub](https://img.shields.io/github/license/panoukos41/couchdb-identity)](https://github.com/panoukos41/couchdb-identity/blob/main/LICENSE.md)
