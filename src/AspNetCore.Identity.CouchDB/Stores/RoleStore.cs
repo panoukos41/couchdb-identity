@@ -16,8 +16,8 @@ namespace AspNetCore.Identity.CouchDB.Stores
     /// <inheritdoc/>
     public class RoleStore : RoleStore<CouchDbRole>
     {
-        public RoleStore(IServiceProvider provider, IOptionsMonitor<CouchDbIdentityOptions> options)
-            : base(provider, options)
+        public RoleStore(IOptionsMonitor<CouchDbIdentityOptions> options, IServiceProvider provider)
+            : base(options, provider)
         {
         }
     }
@@ -35,9 +35,9 @@ namespace AspNetCore.Identity.CouchDB.Stores
         where TRole : CouchDbRole
     {
         public RoleStore(
-            IServiceProvider provider,
-            IOptionsMonitor<CouchDbIdentityOptions> options)
-            : base(provider, options)
+            IOptionsMonitor<CouchDbIdentityOptions> options,
+            IServiceProvider provider)
+            : base(options, provider)
         {
             Discriminator = Options.CurrentValue.RoleDiscriminator;
         }
@@ -109,7 +109,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
 #nullable disable
             return (await GetDatabase()
-                .GetViewAsync(Views.Role<TRole>.NormalizedName, options, cancellationToken)
+                .GetViewAsync(Views<CouchDbUser<TRole>, TRole>.RoleNormalizedName, options, cancellationToken)
                 .ConfigureAwait(false))
                 .FirstOrDefault()
                 ?.Document;

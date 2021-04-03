@@ -8,10 +8,7 @@ namespace AspNetCore.Identity.CouchDB.Internal
 
         public string Value { get; }
 
-        public static View<TKey, TValue, TDoc> Create(string design, string view) =>
-            new(design, view);
-
-        private View(string design, string view)
+        public View(string design, string view)
         {
             Design = design;
             Value = view;

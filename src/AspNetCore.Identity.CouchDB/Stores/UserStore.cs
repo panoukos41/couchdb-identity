@@ -4,7 +4,6 @@ using AspNetCore.Identity.CouchDB.Stores.Internal;
 using CouchDB.Driver;
 using CouchDB.Driver.Views;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -19,9 +18,10 @@ namespace AspNetCore.Identity.CouchDB.Stores
     public class UserStore : UserStore<CouchDbUser, CouchDbRole>
     {
         public UserStore(
-            IServiceProvider provider,
-            IOptionsMonitor<CouchDbIdentityOptions> options)
-            : base(provider, options)
+            IOptionsMonitor<CouchDbIdentityOptions> options,
+            IRoleStore<CouchDbRole> roleStore,
+            IServiceProvider provider)
+            : base(options, roleStore, provider)
         {
         }
     }
@@ -31,9 +31,10 @@ namespace AspNetCore.Identity.CouchDB.Stores
         where TUser : CouchDbUser
     {
         public UserStore(
-            IServiceProvider provider,
-            IOptionsMonitor<CouchDbIdentityOptions> options)
-            : base(provider, options)
+            IOptionsMonitor<CouchDbIdentityOptions> options,
+            IRoleStore<CouchDbRole> roleStore,
+            IServiceProvider provider)
+            : base(options, roleStore, provider)
         {
         }
     }
@@ -63,15 +64,16 @@ namespace AspNetCore.Identity.CouchDB.Stores
         where TRole : CouchDbRole
     {
         public UserStore(
-            IServiceProvider provider,
-            IOptionsMonitor<CouchDbIdentityOptions> options)
-            : base(provider, options)
+            IOptionsMonitor<CouchDbIdentityOptions> options,
+            IRoleStore<TRole> roleStore,
+            IServiceProvider provider)
+            : base(options, provider)
         {
-            roleStore = provider.GetRequiredService<IRoleStore<TRole>>();
+            _roleStore = roleStore;
             Discriminator = Options.CurrentValue.UserDiscriminator;
         }
 
-        private readonly IRoleStore<TRole> roleStore;
+        private readonly IRoleStore<TRole> _roleStore;
 
         /// <inheritdoc/>
         protected override string Discriminator { get; }
@@ -146,7 +148,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
 #nullable disable
             return (await GetDatabase()
-                .GetViewAsync(Views.User<TUser, TRole>.NormalizedUserName, options, cancellationToken)
+                .GetViewAsync(Views<TUser, TRole>.UserNormalizedUsername, options, cancellationToken)
                 .ConfigureAwait(false))
                 .FirstOrDefault()
                 ?.Document;
@@ -277,7 +279,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
 #nullable disable
             return (await GetDatabase()
-                .GetViewAsync(Views.User<TUser, TRole>.NormalizedEmail, options, cancellationToken)
+                .GetViewAsync(Views<TUser, TRole>.UserNormalizedEmail, options, cancellationToken)
                 .ConfigureAwait(false))
                 .FirstOrDefault()
                 ?.Document;
@@ -397,7 +399,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
             Check.NotNull(user, nameof(user));
             Check.NotNull(normalizedRoleName, nameof(normalizedRoleName));
 
-            var role = await roleStore.FindByNameAsync(normalizedRoleName, cancellationToken);
+            var role = await _roleStore.FindByNameAsync(normalizedRoleName, cancellationToken);
 
             Check.Found(role, nameof(normalizedRoleName), $"The role '{normalizedRoleName}' does not exist.");
 
@@ -437,7 +439,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
             };
 
             return (await GetDatabase()
-                .GetViewAsync(Views.User<TUser, TRole>.NormalizedRoleNames, options, cancellationToken)
+                .GetViewAsync(Views<TUser, TRole>.UserRolesNormalizedName, options, cancellationToken)
                 .ConfigureAwait(false))
                 .Select(x => x.Document)
                 .ToArray();

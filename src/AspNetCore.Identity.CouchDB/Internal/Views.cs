@@ -1,7 +1,5 @@
 ﻿using AspNetCore.Identity.CouchDB.Models;
 
-#pragma warning disable CA1034 // Nested types should not be visible
-
 namespace AspNetCore.Identity.CouchDB.Internal
 {
     /// <summary>
@@ -11,46 +9,68 @@ namespace AspNetCore.Identity.CouchDB.Internal
     /// These can be overriden but make sure your database has the new views
     /// and that they perform the correct actions.
     /// </remarks>
-    public static class Views
+    public static class Views<TUser, TRole>
+        where TUser : CouchDbUser<TRole>
+        where TRole : CouchDbRole
     {
-        /// <summary>
-        /// Views regarding a <see cref="CouchDbUser"/> document.
-        /// </summary>
-        public static class User<TUser, TRole>
-            where TUser : CouchDbUser<TRole>
-            where TRole : CouchDbRole
-        {
-            /// <summary>
-            /// Key = NormalizedUserName, Value = Rev
-            /// </summary>
-            public static View<string, string, TUser> NormalizedUserName { get; set; } =
-                View<string, string, TUser>.Create("user", "normalized_username");
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
-            /// <summary>
-            /// Key = NormalizedEmail, Value = Rev
-            /// </summary>
-            public static View<string, string, TUser> NormalizedEmail { get; set; } =
-                View<string, string, TUser>.Create("user", "normalized_email");
+        // Since ApplyOptions is called with default options none of the values will be null.
+        static Views() => ApplyOptions(new());
 
-            /// <summary>
-            /// Key = Role, Value = Rev
-            /// </summary>
-            public static View<string, string, TUser> NormalizedRoleNames { get; set; } =
-                View<string, string, TUser>.Create("user", "normalized_role_names");
-        }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
+        public static string Document { get; set; }
 
         /// <summary>
-        /// Views regarding a <see cref="CouchDbRole"/> document.
+        /// With reduce = true (default) then Key = null, Value = 'count'<br/>
+        /// When reduce = false (manual) then Key = Id, Value = Rev
         /// </summary>
-        public static class Role<TRole>
-            where TRole : CouchDbRole
+        /// <remarks>Since couchdb.net uses flurl and that uses JSON.NET the int value json will be converted to string.</remarks>
+        public static View<string, string, TUser> User { get; set; }
+
+        /// <summary>
+        /// Key = NormalizedUserName, Value = Rev
+        /// </summary>
+        public static View<string, string, TUser> UserNormalizedUsername { get; set; }
+
+        /// <summary>
+        /// Key = NormalizedEmail, Value = Rev
+        /// </summary>
+        public static View<string, string, TUser> UserNormalizedEmail { get; set; }
+
+        /// <summary>
+        /// Key = Role.NormalizedName, Value = Rev
+        /// </summary>
+        public static View<string, string, TUser> UserRolesNormalizedName { get; set; }
+
+        /// <summary>
+        /// With reduce = true (default) then Key = null, Value = 'count'<br/>
+        /// When reduce = false (manual) then Key = Id, Value = Rev
+        /// </summary>
+        /// <remarks>Since couchdb.net uses flurl and that uses JSON.NET the int value json will be converted to string.</remarks>
+        public static View<string, string, TRole> Role { get; set; }
+
+        /// <summary>
+        /// Key = NormalizedName, Value = Rev
+        /// </summary>
+        public static View<string, string, TRole> RoleNormalizedName { get; set; }
+
+        /// <summary>
+        /// Apply these options to the existing view properties.
+        /// </summary>
+        /// <param name="options"></param>
+        public static void ApplyOptions(CouchDbViewOptions options)
         {
-            /// <summary>
-            /// Key = NormalizedName, Value = Rev
-            /// </summary>
-            /// <value>Default is user/normalized_name.</value>
-            public static View<string, string, TRole> NormalizedName { get; set; } =
-                View<string, string, TRole>.Create("role", "normalized_name");
+            Check.NotNull(options, nameof(options));
+
+            Document = options.Document;
+            User = new(Document, options.User);
+            UserNormalizedUsername = new(Document, options.UserNormalizedUsername);
+            UserNormalizedEmail = new(Document, options.UserNormalizedEmail);
+            UserRolesNormalizedName = new(Document, options.UserRolesNormalizedName);
+            Role = new(Document, options.Role);
+            RoleNormalizedName = new(Document, options.RoleNormalizedName);
         }
     }
 }

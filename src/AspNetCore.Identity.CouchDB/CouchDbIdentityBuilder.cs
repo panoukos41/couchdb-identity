@@ -15,7 +15,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="services">The services collection.</param>
         public CouchDbIdentityBuilder(IServiceCollection services)
-            => Services = services ?? throw new ArgumentNullException(nameof(services));
+        {
+            Services = services ?? throw new ArgumentNullException(nameof(services));
+        }
 
         /// <summary>
         /// Gets the services collection.
@@ -31,10 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="CouchDbIdentityBuilder"/>.</returns>
         public CouchDbIdentityBuilder Configure(Action<CouchDbIdentityOptions> configuration)
         {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            Check.NotNull(configuration, nameof(configuration));
 
             Services.Configure(configuration);
 
@@ -73,10 +72,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="CouchDbIdentityBuilder"/>.</returns>
         public CouchDbIdentityBuilder SetDatabaseName(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("Database name must not be null or whitespace.", nameof(name));
-            }
+            Check.NullOrWhiteSpace(name, nameof(name));
 
             return Configure(options => options.DatabaseName = name);
         }
@@ -92,6 +88,18 @@ namespace Microsoft.Extensions.DependencyInjection
             Check.NotNull(client, nameof(client));
 
             return Configure(options => options.CouchClient = client);
+        }
+
+        /// <summary>
+        /// Configures the CouchDB design document that will be used.
+        /// </summary>
+        /// <param name="viewOptions">The new options to use.</param>
+        /// <returns>The <see cref="CouchDbIdentityBuilder"/>.</returns>
+        public CouchDbIdentityBuilder UseViewOptions(CouchDbViewOptions viewOptions)
+        {
+            Check.NotNull(viewOptions, nameof(viewOptions));
+
+            return Configure(options => options.ViewOptions = viewOptions);
         }
 
         /// <inheritdoc/>
