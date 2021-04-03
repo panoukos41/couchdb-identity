@@ -17,11 +17,30 @@ namespace AspNetCore.Identity.CouchDB.Models
     public class PhoneInfo : IEquatable<PhoneInfo?>
     {
         /// <summary>
+        /// Initialize a new <see cref="PhoneInfo"/> with a number.
+        /// </summary>
+        [JsonConstructor]
+        public PhoneInfo(string number)
+        {
+            Number = number;
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="PhoneInfo"/> from another.
+        /// </summary>
+        /// <param name="other">The <see cref="PhoneInfo"/> to copy values from.</param>
+        public PhoneInfo(PhoneInfo other)
+        {
+            Number = other.Number;
+            Confirmed = other.Confirmed;
+        }
+
+        /// <summary>
         /// Gets or sets a telephone number for the user.
         /// </summary>
         [ProtectedPersonalData]
         [JsonProperty("number", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Number { get; set; } = null!;
+        public virtual string Number { get; set; }
 
         /// <summary>
         /// Gets or sets a flag indicating if a user has confirmed their telephone address.
@@ -40,7 +59,7 @@ namespace AspNetCore.Identity.CouchDB.Models
             return Number;
         }
 
-        #region Equals
+        #region Equals and HashCode
 
         /// <inheritdoc/>
         public override bool Equals(object? obj)

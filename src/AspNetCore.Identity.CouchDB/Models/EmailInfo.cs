@@ -17,19 +17,25 @@ namespace AspNetCore.Identity.CouchDB.Models
     public class EmailInfo : IEquatable<EmailInfo?>
     {
         /// <summary>
-        /// Initialize a new <see cref="EmailInfo"/>.
-        /// </summary>
-        public EmailInfo()
-        {
-        }
-
-        /// <summary>
         /// Initialize a new <see cref="EmailInfo"/> with the provided email.
         /// </summary>
         /// <param name="address">The email to initialize with.</param>
+        [JsonConstructor]
         public EmailInfo(string address)
         {
             Address = address;
+            Normalized = address.ToUpperInvariant();
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="EmailInfo"/> from another.
+        /// </summary>
+        /// <param name="other">The <see cref="EmailInfo"/> to copy values from.</param>
+        public EmailInfo(EmailInfo other)
+        {
+            Address = other.Address;
+            Normalized = other.Normalized;
+            Confirmed = other.Confirmed;
         }
 
         /// <summary>
@@ -37,13 +43,13 @@ namespace AspNetCore.Identity.CouchDB.Models
         /// </summary>
         [ProtectedPersonalData]
         [JsonProperty("address", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Address { get; set; } = null!;
+        public virtual string Address { get; set; }
 
         /// <summary>
         /// Gets or sets the normalized email address.
         /// </summary>
         [JsonProperty("normalized", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Normalized { get; set; } = null!;
+        public virtual string Normalized { get; set; }
 
         /// <summary>
         /// Gets or sets a flag indicating this email address has been confirmed.
@@ -62,7 +68,7 @@ namespace AspNetCore.Identity.CouchDB.Models
             return Address;
         }
 
-        #region Equals
+        #region Equals and HashCode
 
         /// <inheritdoc/>
         public override bool Equals(object? obj)
@@ -74,13 +80,13 @@ namespace AspNetCore.Identity.CouchDB.Models
         public bool Equals(EmailInfo? other)
         {
             return other is not null &&
-                   Confirmed == other.Confirmed;
+                   Normalized == other.Normalized;
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return HashCode.Combine(Confirmed);
+            return HashCode.Combine(Normalized);
         }
 
         public static bool operator ==(EmailInfo? left, EmailInfo? right)
