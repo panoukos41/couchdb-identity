@@ -6,8 +6,10 @@ using CouchDB.Driver.Views;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,8 +32,8 @@ namespace AspNetCore.Identity.CouchDB.Stores
     public class RoleStore<TRole> :
         StoreBase<TRole>,
         IQueryableRoleStore<TRole>,
-        IRoleStore<TRole>
-        //IRoleClaimStore<TRole>
+        IRoleStore<TRole>,
+        IRoleClaimStore<TRole>
         where TRole : CouchDbRole
     {
         public RoleStore(
@@ -60,6 +62,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         /// <inheritdoc/>
         public virtual async Task<IdentityResult> CreateAsync(TRole role, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(role, nameof(role));
 
             role.Id ??= Guid.NewGuid().ToString();
@@ -71,6 +74,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         /// <inheritdoc/>
         public virtual async Task<IdentityResult> UpdateAsync(TRole role, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(role, nameof(role));
 
             await GetDatabase().AddOrUpdateAsync(role, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -81,6 +85,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         /// <inheritdoc/>
         public virtual async Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(role, nameof(role));
 
             await GetDatabase().RemoveAsync(role, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -91,6 +96,8 @@ namespace AspNetCore.Identity.CouchDB.Stores
         /// <inheritdoc/>
         public virtual async Task<TRole> FindByIdAsync(string roleId, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(roleId, nameof(roleId));
 #nullable disable
             return await GetDatabase().FindAsync(roleId, cancellationToken: cancellationToken).ConfigureAwait(false);
 #nullable enable
@@ -99,6 +106,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         /// <inheritdoc/>
         public virtual async Task<TRole> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(normalizedRoleName, nameof(normalizedRoleName));
 
             var options = new CouchViewOptions<string>
@@ -167,49 +175,35 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
         #region IRoleClaimStore
 
-        ///// <inheritdoc/>
-        //public virtual async Task AddClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default)
-        //{
-        //    Check.NotNull(role, nameof(role));
-        //    Check.NotNull(claim, nameof(claim));
+        /// <inheritdoc/>
+        public virtual Task AddClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(role, nameof(role));
+            Check.NotNull(claim, nameof(claim));
 
-        //    var currentClaim = role.Claims.FirstOrDefault(c => c.ClaimType == claim.Type && c.ClaimValue == claim.Value);
+            role.Claims.Add(claim);
+            return Task.CompletedTask;
+        }
 
-        //    if (currentClaim is null)
-        //    {
-        //        role.Claims.Add(new() { ClaimType = claim.Type, ClaimValue = claim.Value });
+        /// <inheritdoc/>
+        public virtual Task RemoveClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(role, nameof(role));
+            Check.NotNull(claim, nameof(claim));
 
-        //        await GetDatabase().AddOrUpdateAsync(role, cancellationToken: cancellationToken);
-        //    }
-        //}
+            role.Claims.Remove(claim);
+            return Task.CompletedTask;
+        }
 
-        ///// <inheritdoc/>
-        //public virtual async Task RemoveClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default)
-        //{
-        //    Check.NotNull(role, nameof(role));
-        //    Check.NotNull(claim, nameof(claim));
+        /// <inheritdoc/>
+        public virtual Task<IList<Claim>> GetClaimsAsync(TRole role, CancellationToken cancellationToken = default)
+        {
+            Check.NotNull(role, nameof(role));
 
-        //    var count = role.Claims.Count;
-        //    role.Claims.RemoveAll(x =>
-        //        x.ClaimType == claim.Type &&
-        //        x.ClaimValue == claim.Value);
-
-        //    if (count != role.Claims.Count)
-        //    {
-        //        await GetDatabase().AddOrUpdateAsync(role, cancellationToken: cancellationToken);
-        //    }
-        //}
-
-        ///// <inheritdoc/>
-        //public virtual async Task<IList<Claim>> GetClaimsAsync(TRole role, CancellationToken cancellationToken = default)
-        //{
-        //    Check.NotNull(role, nameof(role));
-
-        //    return (await FindByIdAsync(role.Id, cancellationToken).ConfigureAwait(false))
-        //        .Claims
-        //        .Select(e => new Claim(e.ClaimType, e.ClaimValue))
-        //        .ToList();
-        //}
+            return Task.FromResult((IList<Claim>)role.Claims.Select(x => x.ToClaim()).ToArray());
+        }
 
         #endregion
     }
