@@ -12,6 +12,7 @@
             UserNormalizedUsername = "user.normalized_username";
             UserNormalizedEmail = "user.normalized_email";
             UserRolesNormalizedName = "user.roles.normalized_name";
+            UserClaims = "user.claims";
             UserLogins = "user.logins";
             Role = "role";
             RoleNormalizedName = "role.normalized_name";
@@ -47,6 +48,12 @@
         /// Key = Role.NormalizedName, Value = Rev
         /// </summary>
         public string UserRolesNormalizedName { get; set; }
+
+        /// <summary>
+        /// The name of the user.claims view. <br/>
+        /// Key = [Type, Value], Value = Rev
+        /// </summary>
+        public string UserClaims { get; set; }
 
         /// <summary>
         /// The logins of the user.logins view. <br/>

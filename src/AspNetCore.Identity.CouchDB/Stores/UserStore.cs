@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -55,10 +56,10 @@ namespace AspNetCore.Identity.CouchDB.Stores
         IUserEmailStore<TUser>,
         IUserPhoneNumberStore<TUser>,
         IUserRoleStore<TUser>,
-        //IUserClaimStore<TUser>,
+        IUserClaimStore<TUser>,
         IUserLoginStore<TUser>,
         IUserTwoFactorStore<TUser>,
-        //IUserAuthenticatorKeyStore<TUser>,
+        IUserAuthenticatorKeyStore<TUser>,
         IUserLockoutStore<TUser>
         where TUser : CouchDbUser<TRole>
         where TRole : CouchDbRole
@@ -79,11 +80,12 @@ namespace AspNetCore.Identity.CouchDB.Stores
         protected override string Discriminator { get; }
 
         /// <inheritdoc/>
-        public void Dispose() { }
+        public virtual void Dispose() { }
 
         #region IQueryableUserStore
 
-        public IQueryable<TUser> Users => GetDatabase().AsQueryable();
+        /// <inheritdoc/>
+        public virtual IQueryable<TUser> Users => GetDatabase().AsQueryable();
 
         #endregion
 
@@ -423,7 +425,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
 
-            return Task.FromResult((IList<string>)user.Roles.Select(x => x.Name).ToList());
+            return Task.FromResult((IList<string>)user.Roles.Select(x => x.Name).ToArray());
         }
 
         /// <inheritdoc/>
@@ -453,6 +455,77 @@ namespace AspNetCore.Identity.CouchDB.Stores
             Check.NotNull(normalizedRoleName, nameof(normalizedRoleName));
 
             return Task.FromResult(user.Roles.Any(x => x.NormalizedName == normalizedRoleName));
+        }
+
+        #endregion
+
+        #region IUserClaimStore
+
+        /// <inheritdoc/>
+        public virtual Task AddClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+            Check.NotNull(claims, nameof(claims));
+
+            foreach (var claim in claims)
+                user.Claims.Add(claim);
+
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc/>
+        public virtual Task RemoveClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+            Check.NotNull(claims, nameof(claims));
+
+            foreach (var claim in claims)
+                user.Claims.Remove(claim);
+
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc/>
+        public virtual Task ReplaceClaimAsync(TUser user, Claim claim, Claim newClaim, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+            Check.NotNull(claim, nameof(claim));
+            Check.NotNull(newClaim, nameof(newClaim));
+
+            user.Claims.Remove(claim);
+            user.Claims.Add(newClaim);
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc/>
+        public virtual Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+
+            return Task.FromResult((IList<Claim>)user.Claims.Select(x => x.ToClaim()).ToArray());
+        }
+
+        /// <inheritdoc/>
+        public virtual async Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(claim, nameof(claim));
+
+            var options = new CouchViewOptions<string[]>
+            {
+                IncludeDocs = true,
+                Key = new[] { claim.Type, claim.Value }
+            };
+
+            return (await GetDatabase()
+                .GetViewAsync(Views<TUser, TRole>.UserClaims, options, cancellationToken)
+                .ConfigureAwait(false))
+                .Select(x => x.Document)
+                .ToArray();
         }
 
         #endregion
@@ -532,6 +605,30 @@ namespace AspNetCore.Identity.CouchDB.Stores
             Check.NotNull(user, nameof(user));
 
             user.TwoFactorEnabled = enabled;
+            return Task.CompletedTask;
+        }
+
+        #endregion
+
+        #region IUserAuthenticatorKeyStore
+
+        /// <inheritdoc/>
+        public virtual Task<string> GetAuthenticatorKeyAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+
+            return Task.FromResult(user.Authenticator.Key);
+        }
+
+        /// <inheritdoc/>
+        public virtual Task SetAuthenticatorKeyAsync(TUser user, string key, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+            Check.NotNull(key, nameof(key));
+
+            user.Authenticator.Key = key;
             return Task.CompletedTask;
         }
 

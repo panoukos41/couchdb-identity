@@ -45,6 +45,11 @@ namespace AspNetCore.Identity.CouchDB.Internal
         public static View<string, string, TUser> UserRolesNormalizedName { get; set; }
 
         /// <summary>
+        /// Key = [Type, Value], Value = Rev
+        /// </summary>
+        public static View<string[], string, TUser> UserClaims { get; set; }
+
+        /// <summary>
         /// Key = [LoginProvider, ProviderKey], Value = Rev
         /// </summary>
         public static View<string[], string, TUser> UserLogins { get; set; }
@@ -74,6 +79,7 @@ namespace AspNetCore.Identity.CouchDB.Internal
             UserNormalizedUsername = new(Document, options.UserNormalizedUsername);
             UserNormalizedEmail = new(Document, options.UserNormalizedEmail);
             UserRolesNormalizedName = new(Document, options.UserRolesNormalizedName);
+            UserClaims = new(Document, options.UserClaims);
             UserLogins = new(Document, options.UserLogins);
             Role = new(Document, options.Role);
             RoleNormalizedName = new(Document, options.RoleNormalizedName);
