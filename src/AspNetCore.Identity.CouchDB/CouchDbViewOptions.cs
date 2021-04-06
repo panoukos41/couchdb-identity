@@ -12,6 +12,7 @@
             UserNormalizedUsername = "user.normalized_username";
             UserNormalizedEmail = "user.normalized_email";
             UserRolesNormalizedName = "user.roles.normalized_name";
+            UserLogins = "user.logins";
             Role = "role";
             RoleNormalizedName = "role.normalized_name";
         }
@@ -46,6 +47,12 @@
         /// Key = Role.NormalizedName, Value = Rev
         /// </summary>
         public string UserRolesNormalizedName { get; set; }
+
+        /// <summary>
+        /// The logins of the user.logins view. <br/>
+        /// Key = [LoginProvider, ProviderKey], Value = Rev
+        /// </summary>
+        public string UserLogins { get; set; }
 
         /// <summary>
         /// The name of the role view. <br/>

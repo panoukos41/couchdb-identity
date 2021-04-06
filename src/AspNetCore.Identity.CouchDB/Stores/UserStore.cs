@@ -423,7 +423,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
 
-            return Task.FromResult((IList<string>)user.Roles.ToList());
+            return Task.FromResult((IList<string>)user.Roles.Select(x => x.Name).ToList());
         }
 
         /// <inheritdoc/>
@@ -460,7 +460,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         #region IUserLoginStore
 
         /// <inheritdoc/>
-        public Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -469,30 +469,47 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task AddLoginAsync(TUser user, UserLoginInfo login, CancellationToken cancellationToken)
+        public virtual Task AddLoginAsync(TUser user, UserLoginInfo login, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
+            Check.NotNull(login, nameof(login));
 
             user.Logins.Add(login);
             return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
-        public Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey, CancellationToken cancellationToken)
+        public virtual Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
+            Check.NotNull(loginProvider, nameof(loginProvider));
+            Check.NotNull(providerKey, nameof(providerKey));
 
             user.Logins.Remove(new(loginProvider, providerKey, ""));
             return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
-        public Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
+        public virtual async Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
-            // todo: Implement View
-            throw new NotImplementedException();
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(loginProvider, nameof(loginProvider));
+            Check.NotNull(providerKey, nameof(providerKey));
+
+            var options = new CouchViewOptions<string[]>
+            {
+                IncludeDocs = true,
+                Key = new[] { loginProvider, providerKey }
+            };
+#nullable disable
+            return (await GetDatabase()
+                .GetViewAsync(Views<TUser, TRole>.UserLogins, options, cancellationToken)
+                .ConfigureAwait(false))
+                .FirstOrDefault()
+                ?.Document;
+#nullable restore
         }
 
         #endregion
@@ -523,7 +540,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         #region IUserLockoutStore
 
         /// <inheritdoc/>
-        public Task<DateTimeOffset?> GetLockoutEndDateAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<DateTimeOffset?> GetLockoutEndDateAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -532,7 +549,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task<bool> GetLockoutEnabledAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<bool> GetLockoutEnabledAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -541,7 +558,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task<int> GetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<int> GetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -550,7 +567,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
+        public virtual Task SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -560,7 +577,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task SetLockoutEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken)
+        public virtual Task SetLockoutEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -570,7 +587,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task<int> IncrementAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<int> IncrementAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -580,7 +597,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task ResetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task ResetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
