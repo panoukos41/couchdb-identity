@@ -1,5 +1,4 @@
-﻿#nullable disable
-using CouchDB.Driver.Types;
+﻿using CouchDB.Driver.Types;
 using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
 using System;
@@ -18,6 +17,11 @@ namespace AspNetCore.Identity.CouchDB.Models
 
         /// <inheritdoc/>
         public CouchDbUser(string userName) : base(userName)
+        {
+        }
+
+        /// <inheritdoc/>
+        public CouchDbUser(CouchDbUser other) : base(other)
         {
         }
     }
@@ -39,7 +43,7 @@ namespace AspNetCore.Identity.CouchDB.Models
         /// <summary>
         /// Initialize a new <see cref="CouchDbUser"/>.
         /// </summary>
-        public CouchDbUser()
+        public CouchDbUser() : this(string.Empty)
         {
         }
 
@@ -53,6 +57,25 @@ namespace AspNetCore.Identity.CouchDB.Models
             NormalizedUserName = userName.ToUpperInvariant();
         }
 
+        /// <summary>
+        /// Initializes a new <see cref="CouchDbUser"/> from another.
+        /// </summary>
+        /// <param name="other">The user to copy values from.</param>
+        public CouchDbUser(CouchDbUser<TRole> other)
+        {
+            Id = other.Id;
+            Rev = other.Rev;
+            UserName = other.UserName;
+            NormalizedUserName = other.NormalizedUserName;
+            Email = new(other.Email);
+            Phone = new(other.Phone);
+            Password = new(other.Password);
+            Lockout = new(other.Lockout);
+            TwoFactorEnabled = other.TwoFactorEnabled;
+            Roles = new(other.Roles);
+            Logins = new(other.Logins);
+        }
+
         /// <inheritdoc/>
         [PersonalData]
         [DataMember]
@@ -64,31 +87,37 @@ namespace AspNetCore.Identity.CouchDB.Models
         /// </summary>
         [ProtectedPersonalData]
         [JsonProperty("username")]
-        public virtual string UserName { get; set; } = null!;
+        public virtual string UserName { get; set; }
 
         /// <summary>
         /// Gets or sets the normalized user name for this user.
         /// </summary>
         [JsonProperty("normalized_username")]
-        public virtual string NormalizedUserName { get; set; } = null!;
+        public virtual string NormalizedUserName { get; set; }
 
         /// <summary>
         /// A users full email info.
         /// </summary>
-        [JsonProperty("email")]
-        public virtual EmailInfo Email { get; set; } = new();
+        [JsonProperty("email", NullValueHandling = NullValueHandling.Ignore)]
+        public virtual EmailInfo Email { get; set; } = new("");
 
         /// <summary>
         /// A users full phone info.
         /// </summary>
-        [JsonProperty("phone")]
-        public virtual PhoneInfo Phone { get; set; } = new();
+        [JsonProperty("phone", NullValueHandling = NullValueHandling.Ignore)]
+        public virtual PhoneInfo Phone { get; set; } = new("");
 
         /// <summary>
         /// A users password info.
         /// </summary>
         [JsonProperty("password")]
-        public virtual PasswordInfo Password { get; set; } = new();
+        public virtual PasswordInfo Password { get; set; } = new("", "");
+
+        /// <summary>
+        /// A users authenticator info.
+        /// </summary>
+        [JsonProperty("authenticator", NullValueHandling = NullValueHandling.Ignore)]
+        public virtual AuthenticatorInfo Authenticator { get; set; } = new("");
 
         /// <summary>
         /// A users lockout info.
@@ -109,6 +138,12 @@ namespace AspNetCore.Identity.CouchDB.Models
         /// </summary>
         [JsonProperty("roles")]
         public virtual HashSet<TRole> Roles { get; private set; } = new();
+        
+        /// <summary>
+        /// Gets the claims a user has.
+        /// </summary>
+        [JsonProperty("claims")]
+        public virtual HashSet<ClaimInfo> Claims { get; private set; } = new();
 
         /// <summary>
         /// Gets a list of a users login info.
@@ -122,7 +157,7 @@ namespace AspNetCore.Identity.CouchDB.Models
         /// <returns>The username of the user.</returns>
         public override string ToString() => UserName;
 
-        #region Equals
+        #region Equals and HashCode
 
         /// <inheritdoc/>
         public override bool Equals(object? obj)
@@ -134,13 +169,14 @@ namespace AspNetCore.Identity.CouchDB.Models
         public bool Equals(CouchDbUser<TRole>? other)
         {
             return other is not null &&
-                   NormalizedUserName == other.NormalizedUserName;
+                Id == other.Id &&
+                NormalizedUserName == other.NormalizedUserName;
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return HashCode.Combine(NormalizedUserName);
+            return HashCode.Combine(Id, NormalizedUserName);
         }
 
         public static bool operator ==(CouchDbUser<TRole>? left, CouchDbUser<TRole>? right)
@@ -156,4 +192,3 @@ namespace AspNetCore.Identity.CouchDB.Models
         #endregion
     }
 }
-#nullable enable

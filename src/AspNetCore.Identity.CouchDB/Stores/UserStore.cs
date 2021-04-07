@@ -4,12 +4,12 @@ using AspNetCore.Identity.CouchDB.Stores.Internal;
 using CouchDB.Driver;
 using CouchDB.Driver.Views;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,9 +19,10 @@ namespace AspNetCore.Identity.CouchDB.Stores
     public class UserStore : UserStore<CouchDbUser, CouchDbRole>
     {
         public UserStore(
-            IServiceProvider provider,
-            IOptionsMonitor<CouchDbIdentityOptions> options)
-            : base(provider, options)
+            IOptionsMonitor<CouchDbIdentityOptions> options,
+            IRoleStore<CouchDbRole> roleStore,
+            IServiceProvider provider)
+            : base(options, roleStore, provider)
         {
         }
     }
@@ -31,9 +32,10 @@ namespace AspNetCore.Identity.CouchDB.Stores
         where TUser : CouchDbUser
     {
         public UserStore(
-            IServiceProvider provider,
-            IOptionsMonitor<CouchDbIdentityOptions> options)
-            : base(provider, options)
+            IOptionsMonitor<CouchDbIdentityOptions> options,
+            IRoleStore<CouchDbRole> roleStore,
+            IServiceProvider provider)
+            : base(options, roleStore, provider)
         {
         }
     }
@@ -54,34 +56,36 @@ namespace AspNetCore.Identity.CouchDB.Stores
         IUserEmailStore<TUser>,
         IUserPhoneNumberStore<TUser>,
         IUserRoleStore<TUser>,
-        //IUserClaimStore<TUser>,
+        IUserClaimStore<TUser>,
         IUserLoginStore<TUser>,
         IUserTwoFactorStore<TUser>,
-        //IUserAuthenticatorKeyStore<TUser>,
+        IUserAuthenticatorKeyStore<TUser>,
         IUserLockoutStore<TUser>
         where TUser : CouchDbUser<TRole>
         where TRole : CouchDbRole
     {
         public UserStore(
-            IServiceProvider provider,
-            IOptionsMonitor<CouchDbIdentityOptions> options)
-            : base(provider, options)
+            IOptionsMonitor<CouchDbIdentityOptions> options,
+            IRoleStore<TRole> roleStore,
+            IServiceProvider provider)
+            : base(options, provider)
         {
-            roleStore = provider.GetRequiredService<IRoleStore<TRole>>();
+            _roleStore = roleStore;
             Discriminator = Options.CurrentValue.UserDiscriminator;
         }
 
-        private readonly IRoleStore<TRole> roleStore;
+        private readonly IRoleStore<TRole> _roleStore;
 
         /// <inheritdoc/>
         protected override string Discriminator { get; }
 
         /// <inheritdoc/>
-        public void Dispose() { }
+        public virtual void Dispose() { }
 
         #region IQueryableUserStore
 
-        public IQueryable<TUser> Users => GetDatabase().AsQueryable();
+        /// <inheritdoc/>
+        public virtual IQueryable<TUser> Users => GetDatabase().AsQueryable();
 
         #endregion
 
@@ -146,7 +150,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
 #nullable disable
             return (await GetDatabase()
-                .GetViewAsync(Views.User<TUser, TRole>.NormalizedUserName, options, cancellationToken)
+                .GetViewAsync(Views<TUser, TRole>.UserNormalizedUsername, options, cancellationToken)
                 .ConfigureAwait(false))
                 .FirstOrDefault()
                 ?.Document;
@@ -277,7 +281,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
 #nullable disable
             return (await GetDatabase()
-                .GetViewAsync(Views.User<TUser, TRole>.NormalizedEmail, options, cancellationToken)
+                .GetViewAsync(Views<TUser, TRole>.UserNormalizedEmail, options, cancellationToken)
                 .ConfigureAwait(false))
                 .FirstOrDefault()
                 ?.Document;
@@ -397,7 +401,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
             Check.NotNull(user, nameof(user));
             Check.NotNull(normalizedRoleName, nameof(normalizedRoleName));
 
-            var role = await roleStore.FindByNameAsync(normalizedRoleName, cancellationToken);
+            var role = await _roleStore.FindByNameAsync(normalizedRoleName, cancellationToken);
 
             Check.Found(role, nameof(normalizedRoleName), $"The role '{normalizedRoleName}' does not exist.");
 
@@ -421,7 +425,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
 
-            return Task.FromResult((IList<string>)user.Roles.ToList());
+            return Task.FromResult((IList<string>)user.Roles.Select(x => x.Name).ToArray());
         }
 
         /// <inheritdoc/>
@@ -437,7 +441,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
             };
 
             return (await GetDatabase()
-                .GetViewAsync(Views.User<TUser, TRole>.NormalizedRoleNames, options, cancellationToken)
+                .GetViewAsync(Views<TUser, TRole>.UserRolesNormalizedName, options, cancellationToken)
                 .ConfigureAwait(false))
                 .Select(x => x.Document)
                 .ToArray();
@@ -455,10 +459,81 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
         #endregion
 
+        #region IUserClaimStore
+
+        /// <inheritdoc/>
+        public virtual Task AddClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+            Check.NotNull(claims, nameof(claims));
+
+            foreach (var claim in claims)
+                user.Claims.Add(claim);
+
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc/>
+        public virtual Task RemoveClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+            Check.NotNull(claims, nameof(claims));
+
+            foreach (var claim in claims)
+                user.Claims.Remove(claim);
+
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc/>
+        public virtual Task ReplaceClaimAsync(TUser user, Claim claim, Claim newClaim, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+            Check.NotNull(claim, nameof(claim));
+            Check.NotNull(newClaim, nameof(newClaim));
+
+            user.Claims.Remove(claim);
+            user.Claims.Add(newClaim);
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc/>
+        public virtual Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+
+            return Task.FromResult((IList<Claim>)user.Claims.Select(x => x.ToClaim()).ToArray());
+        }
+
+        /// <inheritdoc/>
+        public virtual async Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(claim, nameof(claim));
+
+            var options = new CouchViewOptions<string[]>
+            {
+                IncludeDocs = true,
+                Key = new[] { claim.Type, claim.Value }
+            };
+
+            return (await GetDatabase()
+                .GetViewAsync(Views<TUser, TRole>.UserClaims, options, cancellationToken)
+                .ConfigureAwait(false))
+                .Select(x => x.Document)
+                .ToArray();
+        }
+
+        #endregion
+
         #region IUserLoginStore
 
         /// <inheritdoc/>
-        public Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -467,30 +542,47 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task AddLoginAsync(TUser user, UserLoginInfo login, CancellationToken cancellationToken)
+        public virtual Task AddLoginAsync(TUser user, UserLoginInfo login, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
+            Check.NotNull(login, nameof(login));
 
             user.Logins.Add(login);
             return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
-        public Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey, CancellationToken cancellationToken)
+        public virtual Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
+            Check.NotNull(loginProvider, nameof(loginProvider));
+            Check.NotNull(providerKey, nameof(providerKey));
 
             user.Logins.Remove(new(loginProvider, providerKey, ""));
             return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
-        public Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
+        public virtual async Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
-            // todo: Implement View
-            throw new NotImplementedException();
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(loginProvider, nameof(loginProvider));
+            Check.NotNull(providerKey, nameof(providerKey));
+
+            var options = new CouchViewOptions<string[]>
+            {
+                IncludeDocs = true,
+                Key = new[] { loginProvider, providerKey }
+            };
+#nullable disable
+            return (await GetDatabase()
+                .GetViewAsync(Views<TUser, TRole>.UserLogins, options, cancellationToken)
+                .ConfigureAwait(false))
+                .FirstOrDefault()
+                ?.Document;
+#nullable restore
         }
 
         #endregion
@@ -518,10 +610,34 @@ namespace AspNetCore.Identity.CouchDB.Stores
 
         #endregion
 
+        #region IUserAuthenticatorKeyStore
+
+        /// <inheritdoc/>
+        public virtual Task<string> GetAuthenticatorKeyAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+
+            return Task.FromResult(user.Authenticator.Key);
+        }
+
+        /// <inheritdoc/>
+        public virtual Task SetAuthenticatorKeyAsync(TUser user, string key, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Check.NotNull(user, nameof(user));
+            Check.NotNull(key, nameof(key));
+
+            user.Authenticator.Key = key;
+            return Task.CompletedTask;
+        }
+
+        #endregion
+
         #region IUserLockoutStore
 
         /// <inheritdoc/>
-        public Task<DateTimeOffset?> GetLockoutEndDateAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<DateTimeOffset?> GetLockoutEndDateAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -530,7 +646,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task<bool> GetLockoutEnabledAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<bool> GetLockoutEnabledAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -539,7 +655,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task<int> GetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<int> GetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -548,7 +664,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
+        public virtual Task SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -558,7 +674,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task SetLockoutEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken)
+        public virtual Task SetLockoutEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -568,7 +684,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task<int> IncrementAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task<int> IncrementAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));
@@ -578,7 +694,7 @@ namespace AspNetCore.Identity.CouchDB.Stores
         }
 
         /// <inheritdoc/>
-        public Task ResetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        public virtual Task ResetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Check.NotNull(user, nameof(user));

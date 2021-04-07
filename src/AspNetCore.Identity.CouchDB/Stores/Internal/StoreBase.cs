@@ -30,7 +30,7 @@ namespace AspNetCore.Identity.CouchDB.Stores.Internal
         /// </summary>
         protected abstract string Discriminator { get; }
 
-        protected StoreBase(IServiceProvider provider, IOptionsMonitor<CouchDbIdentityOptions> options)
+        protected StoreBase(IOptionsMonitor<CouchDbIdentityOptions> options, IServiceProvider provider)
         {
             Options = options;
             Client = options.CurrentValue.CouchClient

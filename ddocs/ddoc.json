@@ -1,0 +1,32 @@
+{
+  "_id": "_design/identity",
+  "views": {
+    "user": {
+      "reduce": "_count",
+      "map": "function (doc) {\n  if (doc.split_discriminator == 'identity.user') {\n    emit(doc._id, doc._rev);\n  }\n}"
+    },
+    "user.normalized_username": {
+      "map": "function (doc) {\n  if (doc.split_discriminator == 'identity.user') {\n    emit(doc.normalized_username, doc._rev);\n  }\n}"
+    },
+    "user.normalized_email": {
+      "map": "function (doc) {\n  if (doc.split_discriminator == 'identity.user') {\n    emit(doc.email.normalized, doc._rev);\n  }\n}"
+    },
+    "user.roles.normalized_name": {
+      "map": "function (doc) {\n  if (doc.split_discriminator == 'identity.user') {\n    doc.roles.forEach(role => {\n      emit(role.normalized_name, doc._rev);\n    })\n  }\n}"
+    },
+    "user.claims": {
+      "map": "function (doc) {\n  if (doc.split_discriminator == 'identity.user') {\n    doc.claims.forEach(claim => {\n      emit([claim.type, claim.value], doc._rev);\n    })\n  }\n}"
+    },
+    "user.logins": {
+      "map": "function (doc) {\n  if (doc.split_discriminator == 'identity.user') {\n    doc.logins.forEach(login => {\n      emit([login.provider, login.key], doc._rev);\n    })\n  }\n}"
+    },
+    "role": {
+      "reduce": "_count",
+      "map": "function (doc) {\n  if (doc.split_discriminator == 'identity.role') {\n    emit(doc._id, doc._rev);\n  }\n}"
+    },
+    "role.normalized_name": {
+      "map": "function (doc) {\n  if (doc.split_discriminator == 'identity.role') {\n    emit(doc.normalized_name, doc._rev);\n  }\n}"
+    }
+  },
+  "language": "javascript"
+}

@@ -27,5 +27,11 @@ namespace AspNetCore.Identity.CouchDB
         {
             if (obj is null) throw new ArgumentException(message, name);
         }
+
+        internal static void NullOrWhiteSpace(string str, string name)
+        {
+            if (string.IsNullOrWhiteSpace(str))
+                throw new ArgumentException("Can't be null or whitespace.", name);
+        }
     }
 }

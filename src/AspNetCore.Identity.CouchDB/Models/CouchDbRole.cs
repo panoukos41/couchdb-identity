@@ -29,7 +29,18 @@ namespace AspNetCore.Identity.CouchDB.Models
         public CouchDbRole(string roleName)
         {
             Name = roleName;
-            NormalizedName = roleName.ToUpperInvariant();
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="CouchDbRole"/> from another role.
+        /// </summary>
+        /// <param name="other">The role to copy values from.</param>
+        public CouchDbRole(CouchDbRole other)
+        {
+            Id = other.Id;
+            Rev = other.Rev;
+            Name = other.Name;
+            NormalizedName = other.NormalizedName;
         }
 
         ///<summary>
@@ -45,12 +56,18 @@ namespace AspNetCore.Identity.CouchDB.Models
         public virtual string NormalizedName { get; set; } = null!;
 
         /// <summary>
+        /// Gets the claims a role has.
+        /// </summary>
+        [JsonProperty("claims")]
+        public virtual HashSet<ClaimInfo> Claims { get; private set; } = new();
+
+        /// <summary>
         /// Returns the name of the role.
         /// </summary>
         /// <returns>The name of the role.</returns>
         public override string ToString() => Name;
 
-        #region Equals
+        #region Equals and HashCode
 
         /// <inheritdoc/>
         public override bool Equals(object? obj)

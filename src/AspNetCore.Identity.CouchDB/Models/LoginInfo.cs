@@ -10,7 +10,7 @@ namespace AspNetCore.Identity.CouchDB.Models
     /// </summary>
     /// <remarks>
     /// This class is modeled after <see cref="UserLoginInfo"/>.<br/>
-    /// ToString returns the <see cref="LoginProvider"/> property.<br/>
+    /// ToString returns the <see cref="ProviderDisplayName"/> property.<br/>
     /// Equality only compares the <see cref="LoginProvider"/> and <see cref="ProviderKey"/> properties.<br/>
     /// GetHashCode returns a combined hash for <see cref="LoginProvider"/> and <see cref="ProviderKey"/> properties.<br/>
     /// Implicit operators to and from <see cref="UserLoginInfo"/> are provided.
@@ -24,11 +24,30 @@ namespace AspNetCore.Identity.CouchDB.Models
         /// <param name="loginProvider">The provider associated with this login information.</param>
         /// <param name="providerKey">The unique identifier for this user provided by the login provider.</param>
         /// <param name="displayName">The display name for this user provided by the login provider.</param>
+        [JsonConstructor]
         public LoginInfo(string loginProvider, string providerKey, string displayName)
         {
             LoginProvider = loginProvider;
             ProviderKey = providerKey;
             ProviderDisplayName = displayName;
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="LoginInfo"/> from another.
+        /// </summary>
+        /// <param name="other">The <see cref="LoginInfo"/> to copy values from.</param>
+        public LoginInfo(LoginInfo other) :
+            this(other.LoginProvider, other.ProviderKey, other.ProviderDisplayName)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="UserLoginInfo"/> from another.
+        /// </summary>
+        /// <param name="other">The <see cref="UserLoginInfo"/> to copy values from.</param>
+        public LoginInfo(UserLoginInfo other) :
+            this(other.LoginProvider, other.ProviderKey, other.ProviderDisplayName)
+        {
         }
 
         /// <summary>
@@ -63,7 +82,7 @@ namespace AspNetCore.Identity.CouchDB.Models
         /// <returns>The <see cref="LoginProvider"/>.</returns>
         public override string ToString()
         {
-            return LoginProvider;
+            return ProviderDisplayName;
         }
 
         #region Implicit operators
@@ -76,7 +95,7 @@ namespace AspNetCore.Identity.CouchDB.Models
 
         #endregion
 
-        #region Equals
+        #region Equals and HashCode
 
         /// <inheritdoc/>
         public override bool Equals(object? obj)

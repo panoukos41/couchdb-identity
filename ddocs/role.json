@@ -1,9 +1,0 @@
-{
-    "_id": "_design/role",
-    "views": {
-        "normalized_name": {
-            "map": "function (doc) {\n  if (doc.split_discriminator == 'aspnetcore.role') {\n    emit(doc.normalized_name, doc._rev);\n  }\n}"
-        }
-    },
-    "language": "javascript"
-}
